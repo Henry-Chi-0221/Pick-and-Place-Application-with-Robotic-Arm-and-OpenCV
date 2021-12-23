@@ -1,46 +1,67 @@
-#import rtde_control
+import rtde_control
 import cv2
 import numpy as np
 import sys
-"""
+import platform
+import rtde_io
+import time
+import threading
 class arm_control(object):
     def __init__(self,ip):
-        self.vel = 0.5
-        self.acc = 0.3
+        self.vel = 0.6
+        self.acc = 0.2
         self.ip = ip
         self.is_moving = False
+        
         try:
             self.rtde_c  = rtde_control.RTDEControlInterface(self.ip)
+            self.rtde_io = rtde_io.RTDEIOInterface(self.ip)
             print('Connected to UR3 , IP:' , self.ip)
         except:
             print(f"No connection. IP : {ip}")
             sys.exit()
+        self.reset() #inital point
+
     def move(self,point):
         self.is_moving = True
         print(f'Moving to {point} ...')
         self.rtde_c.moveL(point, self.vel, self.acc)
-    def grab(self):
-        pass
-    def release(self):
-        pass
-    def map_coordinate(self):
-        pass
-    def calibrate(self):
-        pass
+    
+    def grab(self , point , height):
+        point[2] -= height
+        self.move(point)
+        time.sleep(0.1)
+        self.rtde_io.setStandardDigitalOut(7, True)
+        time.sleep(0.1)
+        point[2] += height
+        self.move(point)
+
+    def release(self , point , height):
+        point[2] -= height
+        self.move(point)
+        time.sleep(0.1)
+        self.rtde_io.setStandardDigitalOut(7, False)
+        time.sleep(0.1)
+        point[2] += height
+        self.move(point)
+
     def reset(self):
-        #self.move()
+        self.move([0.29255 , -0.10271 , 0.33732 ,-2.224 , 2.218 , -0.032])
         self.is_moving = False
-        pass
-"""
+        
+
 #arm = arm_control(ip = "192.168.86.128")
 #arm.move([-0.143, -0.435, 0.20, -0.001, 3.12, 0.04])
 
 class detection(object):
     def __init__(self):
-        self.cap = cv2.VideoCapture(0 ,  cv2.CAP_DSHOW)
+        if platform.system() == "Windows":
+            self.cap = cv2.VideoCapture(0 ,  cv2.CAP_DSHOW)
+        else:
+            self.cap = cv2.VideoCapture(0)
         self.kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
         self.point = tuple()
-        #self.arm = arm_control(ip = "192.168.86.128")
+        self.arm = arm_control(ip = "192.168.86.128")
     def get_cnt(self,img , thr=200):
         contours,_ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         if len(contours) > 0:
@@ -62,6 +83,28 @@ class detection(object):
             return cX,cY
         else:
             return tuple()
+
+
+    def to_red(self):
+        self.arm.move([0.3066,0.09941,0.27188,-2.784,1.356,0.011])
+        self.arm.grab([0.3066,0.09941,0.27188,-2.784,1.356,0.011] ,0.04808)
+        self.arm.move([0.30216,-0.27281,0.27188,-2.784,1.356,0.011])
+        self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808)
+        self.arm.reset()
+
+    def to_blue(self):
+        self.arm.move([0.3066,0.09941,0.27188,-2.784,1.356,0.011])
+        self.arm.grab([0.3066,0.09941,0.27188,-2.784,1.356,0.011] ,0.04808)
+        self.arm.move([0.30216,-0.27281,0.27188,-2.784,1.356,0.011])
+        self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808)
+        self.arm.reset()
+
+    def to_green(self):
+        self.arm.move([0.3066,0.09941,0.27188,-2.784,1.356,0.011])
+        self.arm.grab([0.3066,0.09941,0.27188,-2.784,1.356,0.011] ,0.04808)
+        self.arm.move([0.30216,-0.27281,0.27188,-2.784,1.356,0.011])
+        self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808)
+        self.arm.reset()
 
     def detect(self):
         while(1):
@@ -85,33 +128,19 @@ class detection(object):
 
                 blue_cnt = self.get_cnt(blue_mask)
                 blue_point = self.get_point(blue_cnt)
-
+                """
                 if self.arm.is_moving == False:
                     if len(red_point) > 0:
-                        #self.arm.move()
-                        #self.arm.grab()
-                        #self.arm.move()
-                        #self.arm.release()
-                        #self.arm.reset()
-                        pass
-
+                        threading.Thread(target = self.to_red).start()
+                        
                     if len(green_point) > 0:
-                        #self.arm.move()
-                        #self.arm.grab()
-                        #self.arm.move()
-                        #self.arm.release()
-                        #self.arm.reset()
-                        pass
+                        threading.Thread(target = self.to_green).start()
 
                     if len(blue_point) > 0:
-                        #self.arm.move()
-                        #self.arm.grab()
-                        #self.arm.move()
-                        #self.arm.release()
-                        #self.arm.reset()
-                        pass
-
+                        threading.Thread(target = self.to_blue).start()
+                """
                 if len(red_point) > 0:
+                    print(red_point)
                     cv2.circle(frame, red_point, 10, (1, 227, 254), -1)
                 if len(green_point) > 0:
                     cv2.circle(frame, green_point, 10, (1, 227, 254), -1)
@@ -119,14 +148,17 @@ class detection(object):
                     cv2.circle(frame, blue_point, 10, (1, 227, 254), -1)
 
                 cv2.drawContours(frame, red_cnt, -1, (0, 255, 0), 2)
-                cv2.drawContours(frame, green_cnt, -1, (0, 255, 0), 2)
-                cv2.drawContours(frame, blue_cnt, -1, (0, 255, 0), 2)
+                #cv2.drawContours(frame, green_cnt, -1, (0, 255, 0), 2)
+                #cv2.drawContours(frame, blue_cnt, -1, (0, 255, 0), 2)
 
                 cv2.imshow('src', frame)
                 cv2.imshow('red' , red_mask)
-                cv2.imshow('blue' , blue_mask)
-                cv2.imshow('green' , green_mask)
+                #cv2.imshow('blue' , blue_mask)
+                #cv2.imshow('green' , green_mask)
             else:
                 print('No camera connected')
             if cv2.waitKey(1) & 0xff == ord('q'):
                 break
+if __name__ == "__main__":
+    d = detection()
+    d.detect()
