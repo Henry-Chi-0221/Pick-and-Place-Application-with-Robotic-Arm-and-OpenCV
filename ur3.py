@@ -62,6 +62,7 @@ class detection(object):
         self.kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
         self.point = tuple()
         self.arm = arm_control(ip = "192.168.86.128")
+        self.k = 0.0011875
     def get_cnt(self,img , thr=200):
         contours,_ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         if len(contours) > 0:
@@ -85,27 +86,87 @@ class detection(object):
             return tuple()
 
 
-    def to_red(self):
-        self.arm.move([0.3066,0.09941,0.27188,-2.784,1.356,0.011])
-        self.arm.grab([0.3066,0.09941,0.27188,-2.784,1.356,0.011] ,0.04808)
+    def to_red(self,point):
+
+        point = list(point) 
+        target = [self.k * item for item in point] # target in camera view
+        cam_x , cam_y = 320 , 240
+
+        target[0] -= cam_x
+        target[1] -= cam_y
+
+        target[0]*=self.k #cam_x
+        target[1]*=self.k #cam_y
+
+        x , y = 0.29255 , -0.10271 # arm init
+       
+        y = y-target[0]
+        x = x-target[1]
+
+
+        self.arm.move([x,y,0.27188,-2.784,1.356,0.011])
+        self.arm.grab([x,y,0.27188,-2.784,1.356,0.011] ,0.04808)
+
         self.arm.move([0.30216,-0.27281,0.27188,-2.784,1.356,0.011])
         self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808)
         self.arm.reset()
 
-    def to_blue(self):
-        self.arm.move([0.3066,0.09941,0.27188,-2.784,1.356,0.011])
-        self.arm.grab([0.3066,0.09941,0.27188,-2.784,1.356,0.011] ,0.04808)
+    def to_blue(self,point):
+
+        point = list(point) 
+        target = [self.k * item for item in point]
+        cam_x , cam_y = 320 , 240
+
+        target[0] -= cam_x
+        target[1] -= cam_y
+
+        target[0]*=self.k #cam_x
+        target[1]*=self.k #cam_y
+
+        x , y = 0.29255 , -0.10271 # arm init
+       
+        y = y-target[0]
+        x = x-target[1]
+
+        self.arm.move([x,y,0.27188,-2.784,1.356,0.011])
+        self.arm.grab([x,y,0.27188,-2.784,1.356,0.011] ,0.04808)
+
         self.arm.move([0.30216,-0.27281,0.27188,-2.784,1.356,0.011])
         self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808)
         self.arm.reset()
 
-    def to_green(self):
-        self.arm.move([0.3066,0.09941,0.27188,-2.784,1.356,0.011])
-        self.arm.grab([0.3066,0.09941,0.27188,-2.784,1.356,0.011] ,0.04808)
+    def to_green(self,point):
+
+        point = list(point) 
+        target = [self.k * item for item in point]
+        cam_x , cam_y = 320 , 240
+
+        target[0] -= cam_x
+        target[1] -= cam_y
+
+        target[0]*=self.k #cam_x
+        target[1]*=self.k #cam_y
+
+        x , y = 0.29255 , -0.10271 # arm init
+       
+        y = y-target[0]
+        x = x-target[1]
+
+        self.arm.move([x,y,0.27188,-2.784,1.356,0.011])
+        self.arm.grab([x,y,0.27188,-2.784,1.356,0.011] ,0.04808)
+
         self.arm.move([0.30216,-0.27281,0.27188,-2.784,1.356,0.011])
         self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808)
         self.arm.reset()
 
+
+    def calibration(self):
+        while(1):
+            ret,frame = self.cap.read()
+            cv2.circle(frame, (320,240), 3, (0,0,255), -1)
+            cv2.imshow('raw' , frame)
+            if cv2.waitKey(1) & 0xff==ord('q'):
+                break
     def detect(self):
         while(1):
             ret , frame = self.cap.read()
@@ -128,17 +189,17 @@ class detection(object):
 
                 blue_cnt = self.get_cnt(blue_mask)
                 blue_point = self.get_point(blue_cnt)
-                """
+            
                 if self.arm.is_moving == False:
                     if len(red_point) > 0:
-                        threading.Thread(target = self.to_red).start()
+                        threading.Thread(target = self.to_red ,args=(red_point,)).start()
                         
                     if len(green_point) > 0:
-                        threading.Thread(target = self.to_green).start()
+                        threading.Thread(target = self.to_green ,args=(green_point,)).start()
 
                     if len(blue_point) > 0:
-                        threading.Thread(target = self.to_blue).start()
-                """
+                        threading.Thread(target = self.to_blue ,args=(blue_point,)).start()
+                
                 if len(red_point) > 0:
                     print(red_point)
                     cv2.circle(frame, red_point, 10, (1, 227, 254), -1)
@@ -161,4 +222,5 @@ class detection(object):
                 break
 if __name__ == "__main__":
     d = detection()
-    d.detect()
+    #d.detect()
+    d.calibration()
