@@ -63,7 +63,7 @@ class detection(object):
         self.point = tuple()
         self.arm = arm_control(ip = "192.168.86.128")
         self.k = 0.0011875
-        self.roi = (640,480)
+        self.roi = [(320,0) , (480,0)]
     def get_cnt(self,img , thr=200):
         contours,_ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         if len(contours) > 0:
@@ -195,15 +195,18 @@ class detection(object):
                 if self.arm.is_moving == False:
                     if len(red_point) > 0:
                         print('red')
-                        threading.Thread(target = self.to_red ,args=(red_point,)).start()
+                        if red_point[0] <=self.roi[0][0] and red_point[0] >=self.roi[0][1] and red_point[1] <=self.roi[1][0] and red_point[1] >=self.roi[1][1]:
+                            threading.Thread(target = self.to_red ,args=(red_point,)).start()
                         
                     if len(green_point) > 0:
                         print('green')
-                        threading.Thread(target = self.to_green ,args=(green_point,)).start()
+                        if green_point[0] <=self.roi[0][0] and green_point[0] >=self.roi[0][1] and green_point[1] <=self.roi[1][0] and green_point[1] >=self.roi[1][1]:
+                            threading.Thread(target = self.to_green ,args=(green_point,)).start()
 
                     if len(blue_point) > 0:
                         print("blue")
-                        threading.Thread(target = self.to_blue ,args=(blue_point,)).start()
+                        if blue_point[0] <=self.roi[0][0] and blue_point[0] >=self.roi[0][1] and blue_point[1] <=self.roi[1][0] and blue_point[1] >=self.roi[1][1]:
+                            threading.Thread(target = self.to_blue ,args=(blue_point,)).start()
                 
                 if len(red_point) > 0:
                     #print(red_point)
@@ -216,16 +219,16 @@ class detection(object):
                 cv2.drawContours(frame, red_cnt, -1, (0, 255, 0), 2)
                 #cv2.drawContours(frame, green_cnt, -1, (0, 255, 0), 2)
                 #cv2.drawContours(frame, blue_cnt, -1, (0, 255, 0), 2)
-
+                cv2.rectangle(frame, (0, 0), (320, 480), (0,0,255), 3, cv2.LINE_AA)
                 cv2.imshow('src', frame)
-                cv2.imshow('red' , red_mask)
-                cv2.imshow('blue' , blue_mask)
-                cv2.imshow('green' , green_mask)
+                #cv2.imshow('red' , red_mask)
+                #cv2.imshow('blue' , blue_mask)
+                #cv2.imshow('green' , green_mask)
             else:
                 print('No camera connected')
             if cv2.waitKey(1) & 0xff == ord('q'):
                 break
 if __name__ == "__main__":
     d = detection()
-    #d.detect()
-    d.calibration()
+    d.detect()
+    #d.calibration()
