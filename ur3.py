@@ -64,6 +64,9 @@ class detection(object):
         self.arm = arm_control(ip = "192.168.86.128")
         self.k = 0.0011875
         self.roi = [(320,0) , (480,0)]
+        self.count_r = 1
+        self.count_g = 1
+        self.count_b = 1
     def get_cnt(self,img , thr=200):
         contours,_ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         if len(contours) > 0:
@@ -110,9 +113,9 @@ class detection(object):
         self.arm.grab([x,y,0.27188,-2.784,1.356,0.011] ,0.04808)
 
         self.arm.move([0.30216,-0.27281,0.27188,-2.784,1.356,0.011])
-        self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808)
+        self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808 * self.count_r)
         self.arm.reset()
-        
+        self.count_r += 1
     def to_blue(self,point):
 
         point = list(point) 
@@ -134,9 +137,9 @@ class detection(object):
         self.arm.grab([x,y,0.27188,-2.784,1.356,0.011] ,0.04808)
 
         self.arm.move([0.30216,-0.27281,0.27188,-2.784,1.356,0.011])
-        self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808)
+        self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808  * self.count_b)
         self.arm.reset()
-
+        self.count_b += 1
     def to_green(self,point):
 
         point = list(point) 
@@ -158,9 +161,9 @@ class detection(object):
         self.arm.grab([x,y,0.27188,-2.784,1.356,0.011] ,0.04808)
 
         self.arm.move([0.30216,-0.27281,0.27188,-2.784,1.356,0.011])
-        self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808)
+        self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808  * self.count_g)
         self.arm.reset()
-
+        self.count_g += 1
 
     def calibration(self):
         while(1):
