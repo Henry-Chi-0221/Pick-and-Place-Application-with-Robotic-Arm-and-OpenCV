@@ -6,6 +6,7 @@ import platform
 import rtde_io
 import time
 import threading
+#192.168.1.100
 class arm_control(object):
     def __init__(self,ip):
         self.vel = 0.6
@@ -21,7 +22,7 @@ class arm_control(object):
             print(f"No connection. IP : {ip}")
             sys.exit()
         self.reset() #inital point
-
+        self.rtde_io.setStandardDigitalOut(7, False)
     def move(self,point):
         self.is_moving = True
         #print(f'Moving to {point} ...')
@@ -30,18 +31,18 @@ class arm_control(object):
     def grab(self , point , height):
         point[2] -= height
         self.move(point)
-        time.sleep(0.1)
+        time.sleep(0.5)
         self.rtde_io.setStandardDigitalOut(7, True)
-        time.sleep(0.1)
+        time.sleep(0.5)
         point[2] += height
         self.move(point)
 
     def release(self , point , height):
         point[2] -= height
         self.move(point)
-        time.sleep(0.1)
+        time.sleep(0.5)
         self.rtde_io.setStandardDigitalOut(7, False)
-        time.sleep(0.1)
+        time.sleep(0.5)
         point[2] += height
         self.move(point)
 
@@ -61,13 +62,15 @@ class detection(object):
             self.cap = cv2.VideoCapture(0)
         self.kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
         self.point = tuple()
-        self.arm = arm_control(ip = "192.168.86.128")
-        self.k = 0.0011875
+        #self.arm = arm_control(ip = "192.168.86.128")
+        self.arm = arm_control(ip = "192.168.1.100")
+        #self.k = 0.0011875
+        self.k = 0.00119791666
         self.roi = [(320,0) , (480,0)]
         self.count_r = 1
         self.count_g = 1
         self.count_b = 1
-    def get_cnt(self,img , thr=200):
+    def get_cnt(self,img , thr=50):
         contours,_ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         if len(contours) > 0:
             new_cnt = []
@@ -88,13 +91,8 @@ class detection(object):
             return cX,cY
         else:
             return tuple()
-
-
     def to_red(self,point):
-
         point = list(point) 
-        #target = [self.k * item for item in point] # target in camera view
-        #print(target)
         cam_x , cam_y = 320 , 240
         
         point[0] -= cam_x
@@ -103,67 +101,55 @@ class detection(object):
         point[0]*=self.k #cam_x
         point[1]*=self.k #cam_y
 
-        x , y = 0.29255 , -0.10271 # arm init
-       
+        x , y = 0.370 , -0.015 # arm init
         y = y-point[0]
         x = x-point[1]
-
-        
         self.arm.move([x,y,0.27188,-2.784,1.356,0.011])
         self.arm.grab([x,y,0.27188,-2.784,1.356,0.011] ,0.04808)
 
-        self.arm.move([0.30216,-0.27281,0.27188,-2.784,1.356,0.011])
-        self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808 * self.count_r)
+        self.arm.move([0.22832,-0.17379,0.27188,-2.784,1.356,0.011])
+        self.arm.release([0.22832,-0.17379,0.27188,-2.784,1.356,0.011], 0.04808)
         self.arm.reset()
-        self.count_r += 1
+        
     def to_blue(self,point):
-
         point = list(point) 
-        #target = [self.k * item for item in point]
         cam_x , cam_y = 320 , 240
-
+        
         point[0] -= cam_x
         point[1] -= cam_y
 
         point[0]*=self.k #cam_x
         point[1]*=self.k #cam_y
 
-        x , y = 0.29255 , -0.10271 # arm init
-       
+        x , y = 0.370 , -0.015 # arm init
         y = y-point[0]
         x = x-point[1]
-
         self.arm.move([x,y,0.27188,-2.784,1.356,0.011])
         self.arm.grab([x,y,0.27188,-2.784,1.356,0.011] ,0.04808)
 
-        self.arm.move([0.30216,-0.27281,0.27188,-2.784,1.356,0.011])
-        self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808  * self.count_b)
+        self.arm.move([0.40833,-0.17379,0.27188,-2.784,1.356,0.011])
+        self.arm.release([0.40833,-0.17379,0.27188,-2.784,1.356,0.011], 0.04808)
         self.arm.reset()
-        self.count_b += 1
+        
     def to_green(self,point):
-
         point = list(point) 
-        #target = [self.k * item for item in point]
         cam_x , cam_y = 320 , 240
-
+        
         point[0] -= cam_x
         point[1] -= cam_y
 
         point[0]*=self.k #cam_x
         point[1]*=self.k #cam_y
 
-        x , y = 0.29255 , -0.10271 # arm init
-       
+        x , y = 0.37613 , -0.0142 # arm init
         y = y-point[0]
         x = x-point[1]
-
         self.arm.move([x,y,0.27188,-2.784,1.356,0.011])
         self.arm.grab([x,y,0.27188,-2.784,1.356,0.011] ,0.04808)
-
-        self.arm.move([0.30216,-0.27281,0.27188,-2.784,1.356,0.011])
-        self.arm.release([0.30216,-0.27281,0.27188,-2.784,1.356,0.011], 0.04808  * self.count_g)
         self.arm.reset()
-        self.count_g += 1
+        self.arm.move([0.40833 -0.17379,0.27188,-2.784,1.356,0.011])
+        self.arm.release([0.40833 -0.17379,0.27188,-2.784,1.356,0.011], 0.04808)
+        self.arm.reset()
 
     def calibration(self):
         while(1):
@@ -180,7 +166,7 @@ class detection(object):
                 
                 red_mask = cv2.inRange(hsv, (0, 20, 20), (10, 255,255))
                 green_mask = cv2.inRange(hsv, (45, 50, 50), (75, 255,255))
-                blue_mask = cv2.inRange(hsv, (110, 20, 20), (130, 255,255))
+                blue_mask = cv2.inRange(hsv, (100, 20, 20), (140, 255,255))
 
                 red_mask = cv2.morphologyEx(red_mask, cv2.MORPH_OPEN, self.kernel, iterations=2)
                 green_mask = cv2.morphologyEx(green_mask, cv2.MORPH_OPEN, self.kernel, iterations=2)
@@ -194,23 +180,26 @@ class detection(object):
 
                 blue_cnt = self.get_cnt(blue_mask)
                 blue_point = self.get_point(blue_cnt)
-            
+                
                 if self.arm.is_moving == False:
                     if len(red_point) > 0:
                         print('red')
-                        if red_point[0] <=self.roi[0][0] and red_point[0] >=self.roi[0][1] and red_point[1] <=self.roi[1][0] and red_point[1] >=self.roi[1][1]:
-                            threading.Thread(target = self.to_red ,args=(red_point,)).start()
                         
-                    if len(green_point) > 0:
+                        if red_point[0] <=self.roi[0][0] and red_point[0] >=self.roi[0][1] and red_point[1] <=self.roi[1][0] and red_point[1] >=self.roi[1][1] and  self.arm.is_moving == False:
+                            threading.Thread(target = self.to_red ,args=(red_point,)).start()
+                    """
+                    if len(green_point) > 0 :
+
                         print('green')
+
                         if green_point[0] <=self.roi[0][0] and green_point[0] >=self.roi[0][1] and green_point[1] <=self.roi[1][0] and green_point[1] >=self.roi[1][1]:
                             threading.Thread(target = self.to_green ,args=(green_point,)).start()
-
+                    """
                     if len(blue_point) > 0:
                         print("blue")
-                        if blue_point[0] <=self.roi[0][0] and blue_point[0] >=self.roi[0][1] and blue_point[1] <=self.roi[1][0] and blue_point[1] >=self.roi[1][1]:
+                        if blue_point[0] <=self.roi[0][0] and blue_point[0] >=self.roi[0][1] and blue_point[1] <=self.roi[1][0] and blue_point[1] >=self.roi[1][1] and  self.arm.is_moving == False:
                             threading.Thread(target = self.to_blue ,args=(blue_point,)).start()
-                
+                    
                 if len(red_point) > 0:
                     #print(red_point)
                     cv2.circle(frame, red_point, 10, (1, 227, 254), -1)
@@ -221,11 +210,11 @@ class detection(object):
 
                 cv2.drawContours(frame, red_cnt, -1, (0, 255, 0), 2)
                 #cv2.drawContours(frame, green_cnt, -1, (0, 255, 0), 2)
-                #cv2.drawContours(frame, blue_cnt, -1, (0, 255, 0), 2)
+                cv2.drawContours(frame, blue_cnt, -1, (0, 255, 0), 2)
                 cv2.rectangle(frame, (0, 0), (320, 480), (0,0,255), 3, cv2.LINE_AA)
                 cv2.imshow('src', frame)
-                #cv2.imshow('red' , red_mask)
-                #cv2.imshow('blue' , blue_mask)
+                cv2.imshow('red' , red_mask)
+                cv2.imshow('blue' , blue_mask)
                 #cv2.imshow('green' , green_mask)
             else:
                 print('No camera connected')
