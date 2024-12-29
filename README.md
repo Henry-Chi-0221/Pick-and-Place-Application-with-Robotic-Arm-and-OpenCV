@@ -26,7 +26,7 @@ This project implements a pick-and-place application using a Universal Robotics 
 
 ### Run the Program
 ```bash
-python main.py
+python ur3.py
 ```
 
 ## Code Structure
